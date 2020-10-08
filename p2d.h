@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <cstdio>
+#include <algorithm>
 
 namespace p2d {
 
@@ -38,6 +39,12 @@ namespace p2d {
     }
     
     template<typename T>
+    v2<T> operator/(const v2<T>& v0, const v2<T>& v1)
+    {
+        return {v0.x / v1.x, v0.y / v1.y};
+    }
+    
+    template<typename T>
     v2<T> abs(const v2<T>& v)
     {
         return {std::abs(v.x), std::abs(v.y)};
@@ -53,6 +60,12 @@ namespace p2d {
     float length(const v2<T>& v)
     {
         return sqrtf(dot(v, v));
+    }
+    
+    template<typename T>
+    v2<T> normalize(v2<T> v)
+    {
+        return v / length(v);
     }
 
     //////////////////////////////////////////////
@@ -76,11 +89,37 @@ namespace p2d {
                r0.pos.y <= (r1.pos.y + r1.size.y) && r1.pos.y <= (r0.pos.y + r0.size.y);
     }
 
-    bool ray_vs_rect(v2f p, v2f v, const rect& r)
+    bool ray_vs_rect(v2f p, v2f v, const rect& r, v2f* hit, v2f* normal)
     {
-        v2f tn = {};
-        v2f tf = {};
-        return false;
+        v2f v_nt = (r.pos - p) / v; 
+        v2f v_ft = (r.pos + r.size - p) / v;
+        
+        if(v_nt.x > v_ft.x) std::swap(v_nt.x, v_ft.x);
+        if(v_nt.y > v_ft.y) std::swap(v_nt.y, v_ft.y);
+
+        if(v_nt.x > v_ft.y || v_nt.y > v_ft.x) return false;
+        
+        const float nt = v_nt.x > v_nt.y ? v_nt.x : v_nt.y;
+        const float ft = v_ft.x < v_ft.y ? v_ft.x : v_ft.y;
+
+        if(nt >= 1 || ft <=0) return false;
+        
+        if(v_nt.x > v_nt.y)
+        {
+            if(v.x < 0)
+                *normal = {1.0f, 0.0f};
+            else
+                *normal = {-1.0f, 0.0f};
+        }
+        else if(v_nt.x < v_nt.y)
+        {
+            if(v.y < 0)
+                *normal = {0.0f, 1.0f};
+            else
+                *normal = {0.0f, -1.0f};
+        }
+        *hit = p + v*nt;
+        return true;
     }
 
 };
